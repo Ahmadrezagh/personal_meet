@@ -1,0 +1,10 @@
+{
+  "iceServers": [
+    { "urls": "stun:YOUR_SERVER_IP:3478" },
+    {
+      "urls": "turn:YOUR_SERVER_IP:3478",
+      "username": "meet",
+      "credential": "your-turn-password"
+    }
+  ]
+}

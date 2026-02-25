@@ -9,6 +9,7 @@ const url = require('url');
 
 const PORT = 3000;
 const PUBLIC = path.join(__dirname, 'public');
+const TURN_CONFIG_PATH = path.join(__dirname, 'turn-config.json');
 
 // meetingId -> Map of userId -> { name, queue: [] }
 const meetings = new Map();
@@ -106,6 +107,21 @@ function apiPeers(req, res, meetingId) {
   sendJson(res, 200, { peers });
 }
 
+// GET /api/ice-servers  -> STUN/TURN config for meet.js (from turn-config.json)
+function apiIceServers(req, res) {
+  let iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+  try {
+    const raw = fs.readFileSync(TURN_CONFIG_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    if (data.iceServers && Array.isArray(data.iceServers) && data.iceServers.length) {
+      iceServers = data.iceServers;
+    }
+  } catch (_) {
+    /* no turn-config.json or invalid: use default STUN */
+  }
+  sendJson(res, 200, { iceServers });
+}
+
 const mime = {
   '.html': 'text/html',
   '.css': 'text/css',
@@ -126,6 +142,9 @@ const server = http.createServer(async (req, res) => {
   }
   if (req.method === 'GET' && pathname === '/api/peers') {
     return apiPeers(req, res, getQuery(req, 'meetingId'));
+  }
+  if (req.method === 'GET' && pathname === '/api/ice-servers') {
+    return apiIceServers(req, res);
   }
 
   let filePath = pathname === '/' ? '/index.html' : pathname;

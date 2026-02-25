@@ -9,6 +9,7 @@
   var isScreenSharing = false;
   var peers = {}; // peerUserId -> { pc, name, tileEl, videoEl }
   var eventSource = null;
+  var iceServers = [{ urls: 'stun:stun.l.google.com:19302' }]; // default; replaced by /api/ice-servers
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -78,7 +79,7 @@
   function createPeerConnection(remoteUserId, remoteUserName, isInitiator) {
     if (peers[remoteUserId] && peers[remoteUserId].pc) return peers[remoteUserId].pc;
     var pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      iceServers: iceServers
     });
     if (localStream) localStream.getTracks().forEach(function (t) { pc.addTrack(t, localStream); });
     if (isScreenSharing && screenStream) {
@@ -184,6 +185,15 @@
     };
   }
 
+  function fetchIceServers() {
+    return fetch(API + '/api/ice-servers')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.iceServers && data.iceServers.length) iceServers = data.iceServers;
+      })
+      .catch(function () {});
+  }
+
   function joinMeeting() {
     fetch(API + '/api/join', {
       method: 'POST',
@@ -194,6 +204,8 @@
         userName: myName
       })
     }).then(function (r) { return r.json(); }).then(function (data) {
+      return fetchIceServers().then(function () { return data; });
+    }).then(function (data) {
       startEventSource();
       var list = data.peers || [];
       list.forEach(function (p) {
