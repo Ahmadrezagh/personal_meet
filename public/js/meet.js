@@ -7,6 +7,12 @@
   var peers = {}; // peerUserId -> { pc, name, tileEl, videoEl }
   var eventSource = null;
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
+
   function byId(id) { return document.getElementById(id); }
   function qs(s) { return document.querySelector(s); }
 

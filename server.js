@@ -111,7 +111,8 @@ const mime = {
   '.css': 'text/css',
   '.js': 'application/javascript',
   '.ico': 'image/x-icon',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.webmanifest': 'application/manifest+json'
 };
 
 const server = http.createServer(async (req, res) => {

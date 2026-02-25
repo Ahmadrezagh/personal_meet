@@ -1,0 +1,16 @@
+{
+  "name": "Personal Meet",
+  "short_name": "Meet",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#202124",
+  "theme_color": "#202124",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

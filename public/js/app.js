@@ -3,6 +3,12 @@
 
   var API = window.location.origin;
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
+
   function byId(id) { return document.getElementById(id); }
   function hint(msg, isError) {
     var el = byId('joinHint');
