@@ -352,7 +352,21 @@ body.meet {
   background: var(--danger-hover);
 }
 
-/* Responsive */
+/* Desktop: larger video tiles (Google Meet style) */
+@media (min-width: 769px) {
+  .videos-container {
+    gap: 24px;
+    padding: 24px;
+  }
+  .video-tile {
+    min-width: 360px;
+    min-height: 270px;
+    max-width: min(560px, 45vw);
+    aspect-ratio: 16/10;
+  }
+}
+
+/* Mobile */
 @media (max-width: 600px) {
   .actions { flex-direction: column; align-items: stretch; }
   .card { min-width: auto; }
