@@ -167,6 +167,38 @@ body.home {
 .hint.error { color: var(--danger); }
 .hint.success { color: var(--success); }
 
+.app-footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 20px 24px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  border-top: 1px solid var(--border);
+}
+
+.app-footer a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.footer-heart {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  color: var(--danger);
+}
+
+.footer-heart svg {
+  width: 1em;
+  height: 1em;
+  margin: 0 2px;
+}
+
 /* ----- Meeting ----- */
 body.meet {
   overflow: hidden;
