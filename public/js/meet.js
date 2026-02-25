@@ -53,6 +53,13 @@
     label.innerHTML = '<span>' + escapeHtml(userName) + '</span>';
     tile.appendChild(video);
     tile.appendChild(label);
+    var fsBtn = document.createElement('button');
+    fsBtn.type = 'button';
+    fsBtn.className = 'tile-btn-fullscreen';
+    fsBtn.title = 'Full screen';
+    fsBtn.setAttribute('aria-label', 'Full screen');
+    fsBtn.innerHTML = '<svg class="icon-expand" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h6v2H5v4H3V3zm12 0h4v4h-2V5h-2V3zM3 21h6v-2H5v-5H3v7zm12-2v2h4v-4h-2v2h-2z"/></svg><svg class="icon-exit" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M5 5h4v2H7v4H5V5zm10 0h4v4h-2V7h-2V5zM5 19v-4h2v2h4v2H5zm14-4v4h-4v-2h2v-2h2z"/></svg>';
+    tile.appendChild(fsBtn);
     container.appendChild(tile);
     peers[userId] = peers[userId] || {};
     peers[userId].videoEl = video;
@@ -441,6 +448,36 @@
         chatInput.value = '';
       });
     }
+
+    var container = byId('videosContainer');
+    if (container) {
+      container.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('.tile-btn-fullscreen');
+        if (!btn) return;
+        var tile = btn.closest('.video-tile');
+        if (!tile) return;
+        if (!document.fullscreenElement) {
+          tile.requestFullscreen && tile.requestFullscreen();
+        } else {
+          document.exitFullscreen && document.exitFullscreen();
+        }
+      });
+    }
+    document.addEventListener('fullscreenchange', function () {
+      var el = document.fullscreenElement;
+      document.querySelectorAll('.tile-btn-fullscreen').forEach(function (btn) {
+        var expand = btn.querySelector('.icon-expand');
+        var exit = btn.querySelector('.icon-exit');
+        if (!expand || !exit) return;
+        if (el && btn.closest('.video-tile') === el) {
+          expand.style.display = 'none';
+          exit.style.display = 'block';
+        } else {
+          expand.style.display = 'block';
+          exit.style.display = 'none';
+        }
+      });
+    });
 
     startLocalStream().then(joinMeeting);
   }
