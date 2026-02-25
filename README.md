@@ -22,6 +22,61 @@ A minimal Google Meet–style app: multi-user voice and video calls. One host cr
 
 5. Allow camera and microphone when prompted. You should see and hear each other.
 
+## Run with pm2 + Apache
+
+You can keep the Node server running with **pm2** and expose it through **Apache** as a reverse proxy.
+
+### 1. Run with pm2
+
+Install pm2 globally (once):
+
+```bash
+npm install -g pm2
+```
+
+Start the app and give it a name:
+
+```bash
+cd /path/to/personal_meet
+pm2 start server.js --name personal-meet
+```
+
+Optional: make pm2 restart apps on reboot:
+
+```bash
+pm2 startup
+pm2 save
+```
+
+### 2. Apache reverse proxy
+
+Enable proxy modules (on many Linux distros):
+
+```bash
+sudo a2enmod proxy proxy_http
+sudo systemctl restart apache2
+```
+
+Add a virtual host pointing to the Node server (port `3000` by default), for example:
+
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:3000/
+    ProxyPassReverse / http://127.0.0.1:3000/
+</VirtualHost>
+```
+
+Then reload Apache:
+
+```bash
+sudo systemctl reload apache2
+```
+
+Now the app is served at `http://your-domain.com`, with pm2 keeping `server.js` running in the background.
+
 ## Structure
 
 - `server.js` – HTTP server and signaling (SSE + JSON POST). Serves `public/` and provides `/api/join`, `/api/signal`, `/api/events`, `/api/peers`.
