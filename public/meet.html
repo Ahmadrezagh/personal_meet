@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting – Personal Meet</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238ab4f8'><path d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'/></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="meet">
+  <div class="meet-layout">
+    <header class="meet-header">
+      <div class="meet-info">
+        <span class="meet-code" id="meetCodeDisplay"></span>
+        <button type="button" class="btn-icon" id="btnCopyCode" title="Copy code">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      </div>
+      <div class="meet-title">Personal Meet</div>
+      <div class="meet-meta">
+        <span id="participantCount">1 participant</span>
+      </div>
+    </header>
+    <div class="videos-container" id="videosContainer">
+      <div class="video-tile local" id="localTile">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <div class="tile-label">
+          <span id="localName">You</span>
+          <span class="muted-badge" id="localMuted">Muted</span>
+        </div>
+      </div>
+      <!-- Remote tiles injected by meet.js -->
+    </div>
+    <footer class="meet-controls">
+      <button type="button" class="ctrl-btn" id="btnMic" title="Microphone">
+        <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 013 3v8a3 3 0 01-6 0V4a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span>Mic</span>
+      </button>
+      <button type="button" class="ctrl-btn" id="btnCam" title="Camera">
+        <svg class="icon-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <span>Camera</span>
+      </button>
+      <button type="button" class="ctrl-btn danger" id="btnLeave" title="Leave call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8l6-6-2-2-6 6-6-6-2 2 6 6-6 6 2 2 6-6 6 6 2-2-6-6z"/></svg>
+        <span>Leave</span>
+      </button>
+    </footer>
+  </div>
+  <script src="js/meet.js"></script>
+</body>
+</html>

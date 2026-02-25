@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Meet</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238ab4f8'><path d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'/></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="home">
+  <header class="header">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      <span>Personal Meet</span>
+    </div>
+  </header>
+  <main class="main">
+    <section class="hero">
+      <h1>Video calls for everyone</h1>
+      <p>Create a meeting and share the code. No account needed.</p>
+    </section>
+    <section class="actions">
+      <div class="card create-card">
+        <h2>New meeting</h2>
+        <p>Create a meeting and invite others with a code.</p>
+        <div class="input-row" style="margin-bottom: 12px;">
+          <input type="text" id="yourName" placeholder="Your name" maxlength="32" autocomplete="name">
+        </div>
+        <button type="button" class="btn btn-primary" id="btnCreate">Create meeting</button>
+      </div>
+      <div class="card join-card">
+        <h2>Join with a code</h2>
+        <p>Enter the code shared by the meeting host.</p>
+        <div class="input-row">
+          <input type="text" id="yourNameJoin" placeholder="Your name" maxlength="32" autocomplete="name">
+        </div>
+        <div class="input-row">
+          <input type="text" id="meetingCode" placeholder="Meeting code" maxlength="8" autocomplete="off">
+          <button type="button" class="btn btn-secondary" id="btnJoin">Join</button>
+        </div>
+        <p class="hint" id="joinHint"></p>
+      </div>
+    </section>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

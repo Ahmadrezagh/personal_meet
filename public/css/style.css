@@ -1,0 +1,352 @@
+/* Personal Meet - all styles local, no CDN */
+:root {
+  --bg: #202124;
+  --bg-card: #292a2d;
+  --bg-tile: #3c4043;
+  --text: #e8eaed;
+  --text-muted: #9aa0a6;
+  --primary: #8ab4f8;
+  --primary-hover: #aecbfa;
+  --danger: #f28b82;
+  --danger-hover: #f6aea9;
+  --success: #81c995;
+  --border: #5f6368;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ----- Home ----- */
+body.home {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--primary);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+
+.hero p {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 640px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  min-width: 280px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.card h2 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.card p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.input-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.input-row input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  color: var(--bg);
+}
+
+.btn-secondary {
+  background: var(--bg-tile);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+.hint.error { color: var(--danger); }
+.hint.success { color: var(--success); }
+
+/* ----- Meeting ----- */
+body.meet {
+  overflow: hidden;
+  height: 100vh;
+}
+
+.meet-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.meet-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.meet-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meet-code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9375rem;
+  letter-spacing: 0.05em;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--bg-tile);
+  color: var(--text);
+}
+
+.btn-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.meet-title {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.meet-meta {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.videos-container {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  overflow: auto;
+  background: var(--bg);
+}
+
+.video-tile {
+  position: relative;
+  background: var(--bg-tile);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-width: 240px;
+  min-height: 180px;
+  max-width: min(400px, 50vw);
+  aspect-ratio: 16/10;
+  box-shadow: var(--shadow);
+}
+
+.video-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-tile.local video {
+  transform: scaleX(-1);
+}
+
+.tile-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(transparent, rgba(0,0,0,.7));
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.muted-badge {
+  background: var(--danger);
+  color: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.video-tile.off .tile-label .muted-badge {
+  background: var(--border);
+}
+
+.meet-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+
+.ctrl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 20px;
+  background: var(--bg-tile);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.ctrl-btn:hover {
+  background: var(--border);
+}
+
+.ctrl-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.ctrl-btn.mic-off .icon-mic,
+.ctrl-btn.cam-off .icon-cam {
+  color: var(--danger);
+}
+
+.ctrl-btn.danger {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.ctrl-btn.danger:hover {
+  background: var(--danger-hover);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .actions { flex-direction: column; align-items: stretch; }
+  .card { min-width: auto; }
+  .meet-header { flex-wrap: wrap; gap: 8px; }
+  .video-tile { max-width: 100%; }
+}
