@@ -4,6 +4,9 @@
   var API = window.location.origin;
   var meetingId, myId, myName, isHost;
   var localStream = null;
+  var cameraStream = null;
+  var screenStream = null;
+  var isScreenSharing = false;
   var peers = {}; // peerUserId -> { pc, name, tileEl, videoEl }
   var eventSource = null;
 
@@ -78,6 +81,16 @@
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
     if (localStream) localStream.getTracks().forEach(function (t) { pc.addTrack(t, localStream); });
+    if (isScreenSharing && screenStream) {
+      var st = screenStream.getVideoTracks()[0];
+      if (st) {
+        pc.getSenders().forEach(function (sender) {
+          if (sender.track && sender.track.kind === 'video') {
+            sender.replaceTrack(st).catch(function () {});
+          }
+        });
+      }
+    }
     pc.onicecandidate = function (e) {
       if (e.candidate) sendSignal(remoteUserId, 'ice', e.candidate);
     };
@@ -197,6 +210,7 @@
     }
     return navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function (stream) {
       localStream = stream;
+      cameraStream = stream;
       byId('localVideo').srcObject = stream;
       byId('localName').textContent = myName;
       Object.keys(peers).forEach(function (uid) {
@@ -236,6 +250,61 @@
     }
   }
 
+  function replaceVideoTrackForAll(track) {
+    Object.keys(peers).forEach(function (uid) {
+      var pc = peers[uid].pc;
+      if (!pc) return;
+      pc.getSenders().forEach(function (sender) {
+        if (sender.track && sender.track.kind === 'video') {
+          sender.replaceTrack(track).catch(function () {});
+        }
+      });
+    });
+  }
+
+  function startScreenShare() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
+      alert('Screen sharing is not supported in this browser.');
+      return;
+    }
+    if (isScreenSharing) return;
+    navigator.mediaDevices.getDisplayMedia({ video: true }).then(function (stream) {
+      screenStream = stream;
+      var track = stream.getVideoTracks()[0];
+      if (!track) return;
+      replaceVideoTrackForAll(track);
+      var videoEl = byId('localVideo');
+      if (videoEl) videoEl.srcObject = stream;
+      isScreenSharing = true;
+      var btn = byId('btnScreen');
+      if (btn) btn.classList.add('screen-on');
+      track.onended = function () {
+        stopScreenShare();
+      };
+    }).catch(function (err) {
+      // Ignore user cancel; log other errors
+      if (err && err.name === 'NotAllowedError') return;
+      console.error(err);
+    });
+  }
+
+  function stopScreenShare() {
+    if (!isScreenSharing) return;
+    var camTrack = cameraStream && cameraStream.getVideoTracks()[0];
+    if (camTrack) {
+      replaceVideoTrackForAll(camTrack);
+      var videoEl = byId('localVideo');
+      if (videoEl) videoEl.srcObject = cameraStream;
+    }
+    if (screenStream) {
+      screenStream.getTracks().forEach(function (t) { t.stop(); });
+      screenStream = null;
+    }
+    isScreenSharing = false;
+    var btn = byId('btnScreen');
+    if (btn) btn.classList.remove('screen-on');
+  }
+
   function leaveMeeting() {
     if (eventSource) eventSource.close();
     Object.keys(peers).forEach(function (id) { removeRemoteTile(id); });
@@ -269,6 +338,10 @@
     byId('btnCam').addEventListener('click', function () {
       var off = this.classList.toggle('cam-off');
       setCam(!off);
+    });
+    byId('btnScreen').addEventListener('click', function () {
+      if (isScreenSharing) stopScreenShare();
+      else startScreenShare();
     });
     byId('btnLeave').addEventListener('click', leaveMeeting);
     byId('btnCopyCode').addEventListener('click', copyCode);

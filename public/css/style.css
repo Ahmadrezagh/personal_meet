@@ -334,6 +334,15 @@ body.meet {
   color: var(--danger);
 }
 
+.ctrl-btn.screen-on {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.ctrl-btn.screen-on:hover {
+  background: var(--primary-hover);
+}
+
 .ctrl-btn.danger {
   background: var(--danger);
   color: var(--bg);
