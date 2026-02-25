@@ -556,13 +556,13 @@ body.meet {
 /* Desktop: larger video tiles (Google Meet style) */
 @media (min-width: 769px) {
   .videos-container {
-    gap: 24px;
+    gap: 20px;
     padding: 24px;
   }
   .video-tile {
-    min-width: 360px;
-    min-height: 270px;
-    max-width: min(560px, 45vw);
+    min-width: 480px;
+    min-height: 320px;
+    max-width: min(720px, 55vw);
     aspect-ratio: 16/10;
   }
 }
