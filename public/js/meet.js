@@ -342,17 +342,28 @@
 
   function openChat() {
     var panel = byId('chatPanel');
+    var backdrop = byId('chatBackdrop');
     if (panel) panel.classList.add('open');
+    if (backdrop) backdrop.classList.add('visible');
   }
 
   function closeChat() {
     var panel = byId('chatPanel');
+    var backdrop = byId('chatBackdrop');
     if (panel) panel.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('visible');
   }
 
   function toggleChat() {
     var panel = byId('chatPanel');
-    if (panel) panel.classList.toggle('open');
+    var backdrop = byId('chatBackdrop');
+    if (!panel) return;
+    var willBeOpen = !panel.classList.contains('open');
+    panel.classList.toggle('open');
+    if (backdrop) {
+      if (willBeOpen) backdrop.classList.add('visible');
+      else backdrop.classList.remove('visible');
+    }
   }
 
   function appendChatMessage(senderName, text, isOwn) {
@@ -406,6 +417,8 @@
     if (btnChat) btnChat.addEventListener('click', toggleChat);
     var btnChatClose = byId('btnChatClose');
     if (btnChatClose) btnChatClose.addEventListener('click', closeChat);
+    var chatBackdrop = byId('chatBackdrop');
+    if (chatBackdrop) chatBackdrop.addEventListener('click', closeChat);
 
     var chatForm = byId('chatForm');
     var chatInput = byId('chatInput');
