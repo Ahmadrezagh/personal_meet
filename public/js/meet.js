@@ -184,6 +184,11 @@
   }
 
   function startLocalStream() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      var msg = 'Camera and microphone require a secure context. Please open this site over HTTPS (or use localhost).';
+      alert(msg);
+      return Promise.reject(new Error(msg));
+    }
     return navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function (stream) {
       localStream = stream;
       byId('localVideo').srcObject = stream;

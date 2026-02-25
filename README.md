@@ -77,6 +77,23 @@ sudo systemctl reload apache2
 
 Now the app is served at `http://your-domain.com`, with pm2 keeping `server.js` running in the background.
 
+**HTTPS required for video/audio:** Browsers only allow camera and microphone over a **secure context** (HTTPS or localhost). If you open the app over plain HTTP on a server, you’ll get an error and no media. Use HTTPS in production, for example with Apache SSL:
+
+```apache
+<VirtualHost *:443>
+    ServerName your-domain.com
+    SSLEngine on
+    SSLCertificateFile /path/to/fullchain.pem
+    SSLCertificateKeyFile /path/to/privkey.pem
+
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:3000/
+    ProxyPassReverse / http://127.0.0.1:3000/
+</VirtualHost>
+```
+
+Enable SSL and proxy modules: `sudo a2enmod ssl proxy proxy_http`, then reload Apache.
+
 ## Structure
 
 - `server.js` – HTTP server and signaling (SSE + JSON POST). Serves `public/` and provides `/api/join`, `/api/signal`, `/api/events`, `/api/peers`.
