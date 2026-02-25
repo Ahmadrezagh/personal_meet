@@ -22,6 +22,8 @@ A minimal Google Meet–style app: multi-user voice and video calls. One host cr
 
 5. Allow camera and microphone when prompted. You should see and hear each other.
 
+**Console:** If you see `The message port closed before a response was received`, that comes from a browser extension (e.g. ad blocker), not this app—you can ignore it.
+
 ## Run with pm2 + Apache
 
 You can keep the Node server running with **pm2** and expose it through **Apache** as a reverse proxy.

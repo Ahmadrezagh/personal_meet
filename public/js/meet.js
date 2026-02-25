@@ -263,29 +263,46 @@
   }
 
   function startScreenShare() {
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
-      alert('Screen sharing is not supported in this browser.');
+    if (isScreenSharing) return;
+    var md = navigator.mediaDevices;
+    if (!md) {
+      alert('Screen sharing requires a secure connection (HTTPS or localhost).');
       return;
     }
-    if (isScreenSharing) return;
-    navigator.mediaDevices.getDisplayMedia({ video: true }).then(function (stream) {
-      screenStream = stream;
-      var track = stream.getVideoTracks()[0];
-      if (!track) return;
-      replaceVideoTrackForAll(track);
-      var videoEl = byId('localVideo');
-      if (videoEl) videoEl.srcObject = stream;
-      isScreenSharing = true;
-      var btn = byId('btnScreen');
-      if (btn) btn.classList.add('screen-on');
-      track.onended = function () {
-        stopScreenShare();
-      };
-    }).catch(function (err) {
-      // Ignore user cancel; log other errors
-      if (err && err.name === 'NotAllowedError') return;
-      console.error(err);
-    });
+    var getDisplayMedia = md.getDisplayMedia;
+    if (typeof getDisplayMedia !== 'function') {
+      alert('Screen sharing is not supported in this browser. Try Chrome or Edge on desktop.');
+      return;
+    }
+    var opts = { video: true };
+    try {
+      getDisplayMedia.call(md, opts).then(function (stream) {
+        screenStream = stream;
+        var track = stream.getVideoTracks()[0];
+        if (!track) {
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          alert('No video track in screen share.');
+          return;
+        }
+        replaceVideoTrackForAll(track);
+        var videoEl = byId('localVideo');
+        if (videoEl) videoEl.srcObject = stream;
+        isScreenSharing = true;
+        var btn = byId('btnScreen');
+        if (btn) btn.classList.add('screen-on');
+        track.onended = function () {
+          stopScreenShare();
+        };
+      }).catch(function (err) {
+        if (err && err.name === 'NotAllowedError') {
+          alert('Screen share cancelled or denied.');
+          return;
+        }
+        alert('Screen share failed: ' + (err ? err.message || err.name : 'unknown error'));
+      });
+    } catch (e) {
+      alert('Screen share failed: ' + (e.message || 'unknown error'));
+    }
   }
 
   function stopScreenShare() {
@@ -339,10 +356,13 @@
       var off = this.classList.toggle('cam-off');
       setCam(!off);
     });
-    byId('btnScreen').addEventListener('click', function () {
-      if (isScreenSharing) stopScreenShare();
-      else startScreenShare();
-    });
+    var btnScreen = byId('btnScreen');
+    if (btnScreen) {
+      btnScreen.addEventListener('click', function () {
+        if (isScreenSharing) stopScreenShare();
+        else startScreenShare();
+      });
+    }
     byId('btnLeave').addEventListener('click', leaveMeeting);
     byId('btnCopyCode').addEventListener('click', copyCode);
 
