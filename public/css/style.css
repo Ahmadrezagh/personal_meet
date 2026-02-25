@@ -573,4 +573,25 @@ body.meet {
   .card { min-width: auto; }
   .meet-header { flex-wrap: wrap; gap: 8px; }
   .video-tile { max-width: 100%; }
+
+  .meet-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .ctrl-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 6px;
+    font-size: 0.65rem;
+    gap: 2px;
+  }
+
+  .ctrl-btn svg {
+    width: 22px;
+    height: 22px;
+  }
 }
