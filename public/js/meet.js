@@ -173,6 +173,8 @@
           handleAnswer(from, payload);
         } else if (type === 'ice') {
           handleIce(from, payload);
+        } else if (type === 'chat' && payload) {
+          appendChatMessage(payload.userName || 'Someone', payload.text, false);
         }
       } catch (e) {}
     };
@@ -338,6 +340,40 @@
     });
   }
 
+  function openChat() {
+    var panel = byId('chatPanel');
+    if (panel) panel.classList.add('open');
+  }
+
+  function closeChat() {
+    var panel = byId('chatPanel');
+    if (panel) panel.classList.remove('open');
+  }
+
+  function toggleChat() {
+    var panel = byId('chatPanel');
+    if (panel) panel.classList.toggle('open');
+  }
+
+  function appendChatMessage(senderName, text, isOwn) {
+    var container = byId('chatMessages');
+    if (!container) return;
+    var msg = document.createElement('div');
+    msg.className = 'meet-chat-msg' + (isOwn ? ' own' : '');
+    msg.innerHTML = '<div class="meet-chat-sender">' + escapeHtml(senderName) + '</div><div class="meet-chat-body">' + escapeHtml(text) + '</div>';
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function sendChatMessage(text) {
+    if (!text || !text.trim()) return;
+    text = text.trim();
+    appendChatMessage(myName, text, true);
+    Object.keys(peers).forEach(function (peerId) {
+      sendSignal(peerId, 'chat', { userName: myName, text: text });
+    });
+  }
+
   function init() {
     parseParams();
     if (!meetingId) {
@@ -365,6 +401,21 @@
     }
     byId('btnLeave').addEventListener('click', leaveMeeting);
     byId('btnCopyCode').addEventListener('click', copyCode);
+
+    var btnChat = byId('btnChat');
+    if (btnChat) btnChat.addEventListener('click', toggleChat);
+    var btnChatClose = byId('btnChatClose');
+    if (btnChatClose) btnChatClose.addEventListener('click', closeChat);
+
+    var chatForm = byId('chatForm');
+    var chatInput = byId('chatInput');
+    if (chatForm && chatInput) {
+      chatForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        sendChatMessage(chatInput.value);
+        chatInput.value = '';
+      });
+    }
 
     startLocalStream().then(joinMeeting);
   }

@@ -50,12 +50,29 @@
         </svg>
         <span>Screen</span>
       </button>
+      <button type="button" class="ctrl-btn" id="btnChat" title="Chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Chat</span>
+      </button>
       <button type="button" class="ctrl-btn danger" id="btnLeave" title="Leave call">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8l6-6-2-2-6 6-6-6-2 2 6 6-6 6 2 2 6-6 6 6 2-2-6-6z"/></svg>
         <span>Leave</span>
       </button>
     </footer>
   </div>
+  <aside class="meet-chat-panel" id="chatPanel" aria-label="Chat">
+    <div class="meet-chat-header">
+      <h2 class="meet-chat-title">Chat</h2>
+      <button type="button" class="btn-icon meet-chat-close" id="btnChatClose" title="Close chat" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="meet-chat-messages" id="chatMessages"></div>
+    <form class="meet-chat-form" id="chatForm">
+      <input type="text" class="meet-chat-input" id="chatInput" placeholder="Send a message..." autocomplete="off" maxlength="500">
+      <button type="submit" class="btn meet-chat-send" id="chatSend" title="Send">Send</button>
+    </form>
+  </aside>
   <script src="js/meet.js"></script>
 </body>
 </html>
