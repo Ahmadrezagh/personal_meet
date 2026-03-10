@@ -13,6 +13,7 @@
   var peers = {}; // peerUserId -> { pc, name, tileEl, videoEl }
   var eventSource = null;
   var iceServers = [{ urls: 'stun:stun.l.google.com:19302' }]; // default; replaced by /api/ice-servers
+  var dragTileId = null;
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
@@ -47,6 +48,7 @@
     var tile = document.createElement('div');
     tile.className = 'video-tile remote';
     tile.id = 'tile-' + userId;
+    tile.draggable = true;
     var video = document.createElement('video');
     video.autoplay = true;
     video.playsInline = true;
@@ -376,6 +378,7 @@
     var tile = document.createElement('div');
     tile.className = 'video-tile local screen-share';
     tile.id = 'localScreenTile';
+    tile.draggable = true;
 
     var video = document.createElement('video');
     video.id = 'localScreenVideo';
@@ -421,6 +424,7 @@
     var tile = document.createElement('div');
     tile.className = 'video-tile remote screen-share';
     tile.id = 'tile-screen-' + userId;
+    tile.draggable = true;
 
     var video = document.createElement('video');
     video.autoplay = true;
@@ -617,6 +621,48 @@
       var btn = byId('btnCopyCode');
       if (btn) { btn.title = 'Copied!'; setTimeout(function () { btn.title = 'Copy code'; }, 1500); }
     });
+  }
+
+  // ----- Local-only tile reordering (drag & drop) -----
+
+  function handleTileDragStart(e) {
+    var tile = e.target && e.target.closest && e.target.closest('.video-tile');
+    if (!tile) return;
+    dragTileId = tile.id;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      try {
+        e.dataTransfer.setData('text/plain', dragTileId);
+      } catch (_) {}
+    }
+  }
+
+  function handleTileDragOver(e) {
+    var tile = e.target && e.target.closest && e.target.closest('.video-tile');
+    if (!tile) return;
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  function handleTileDrop(e) {
+    var container = byId('videosContainer');
+    if (!container) return;
+    e.preventDefault();
+    var targetTile = e.target && e.target.closest && e.target.closest('.video-tile');
+    if (!targetTile) return;
+    var sourceId = dragTileId;
+    if (!sourceId && e.dataTransfer) {
+      try {
+        sourceId = e.dataTransfer.getData('text/plain');
+      } catch (_) {}
+    }
+    if (!sourceId) return;
+    var srcTile = byId(sourceId);
+    if (!srcTile || srcTile === targetTile) return;
+    container.insertBefore(srcTile, targetTile);
+    dragTileId = null;
   }
 
   // ----- Whiteboard (inline overlay) -----
@@ -931,6 +977,11 @@
           document.exitFullscreen && document.exitFullscreen();
         }
       });
+
+      // Drag & drop reordering handlers (local only)
+      container.addEventListener('dragstart', handleTileDragStart);
+      container.addEventListener('dragover', handleTileDragOver);
+      container.addEventListener('drop', handleTileDrop);
     }
     document.addEventListener('fullscreenchange', function () {
       var el = document.fullscreenElement;
