@@ -68,6 +68,7 @@
     peers[userId].videoEl = video;
     peers[userId].tileEl = tile;
     peers[userId].name = userName;
+    peers[userId].camStreamId = stream && stream.id;
     updateParticipantCount();
   }
 
@@ -76,6 +77,7 @@
     if (!p) return;
     if (p.pc) try { p.pc.close(); } catch (_) {}
     if (p.tileEl && p.tileEl.parentNode) p.tileEl.parentNode.removeChild(p.tileEl);
+    if (p.screenTileEl && p.screenTileEl.parentNode) p.screenTileEl.parentNode.removeChild(p.screenTileEl);
     delete peers[userId];
     updateParticipantCount();
   }
@@ -95,20 +97,38 @@
     if (isScreenSharing && screenStream) {
       var st = screenStream.getVideoTracks()[0];
       if (st) {
-        pc.getSenders().forEach(function (sender) {
-          if (sender.track && sender.track.kind === 'video') {
-            sender.replaceTrack(st).catch(function () {});
-          }
-        });
+        var screenSender = pc.addTrack(st, screenStream);
+        peers[remoteUserId] = peers[remoteUserId] || {};
+        peers[remoteUserId].screenSender = screenSender;
       }
     }
     pc.onicecandidate = function (e) {
       if (e.candidate) sendSignal(remoteUserId, 'ice', e.candidate);
     };
     pc.ontrack = function (e) {
-      addRemoteTile(remoteUserId, remoteUserName, e.streams[0]);
-      var v = peers[remoteUserId] && peers[remoteUserId].videoEl;
-      if (v && e.streams[0]) v.srcObject = e.streams[0];
+      var stream = e.streams && e.streams[0];
+      if (!stream) return;
+      var p = peers[remoteUserId] = peers[remoteUserId] || {};
+
+      // First stream we see for this peer is treated as camera
+      if (!p.camStreamId || p.camStreamId === stream.id) {
+        addRemoteTile(remoteUserId, remoteUserName, stream);
+        if (p.videoEl) p.videoEl.srcObject = stream;
+        p.camStreamId = stream.id;
+      } else {
+        // Additional video stream is treated as screen share
+        if (!p.screenTileEl) {
+          addRemoteScreenTile(remoteUserId, remoteUserName, stream);
+        } else if (p.screenVideoEl) {
+          p.screenVideoEl.srcObject = stream;
+        }
+        p.screenStreamId = stream.id;
+      }
+
+      // Clean up screen tile when its track ends
+      e.track.onended = function () {
+        handleRemoteTrackEnded(remoteUserId, stream.id);
+      };
     };
     pc.onconnectionstatechange = function () {
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
@@ -389,6 +409,57 @@
     }
   }
 
+  // ----- Remote screen tile helpers -----
+
+  function addRemoteScreenTile(userId, userName, stream) {
+    var container = byId('videosContainer');
+    if (!container) return;
+
+    var p = peers[userId] = peers[userId] || {};
+    if (p.screenTileEl) return;
+
+    var tile = document.createElement('div');
+    tile.className = 'video-tile remote screen-share';
+    tile.id = 'tile-screen-' + userId;
+
+    var video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    if (stream) video.srcObject = stream;
+
+    var label = document.createElement('div');
+    label.className = 'tile-label';
+    label.innerHTML = '<span>' + escapeHtml(userName) + ' – Screen</span>';
+
+    var fsBtn = document.createElement('button');
+    fsBtn.type = 'button';
+    fsBtn.className = 'tile-btn-fullscreen';
+    fsBtn.title = 'Full screen';
+    fsBtn.setAttribute('aria-label', 'Full screen');
+    fsBtn.innerHTML = '<svg class="icon-expand" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h6v2H5v4H3V3zm12 0h4v4h-2V5h-2V3zM3 21h6v-2H5v-5H3v7zm12-2v2h4v-4h-2v2h-2z"/></svg><svg class="icon-exit" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M5 5h4v2H7v4H5V5zm10 0h4v4h-2V7h-2V5zM5 19v-4h2v2h4v2H5zm14-4v4h-4v-2h2v-2h2z"/></svg>';
+
+    tile.appendChild(video);
+    tile.appendChild(label);
+    tile.appendChild(fsBtn);
+    container.appendChild(tile);
+
+    p.screenTileEl = tile;
+    p.screenVideoEl = video;
+  }
+
+  function handleRemoteTrackEnded(userId, streamId) {
+    var p = peers[userId];
+    if (!p) return;
+    if (p.screenStreamId === streamId) {
+      if (p.screenTileEl && p.screenTileEl.parentNode) {
+        p.screenTileEl.parentNode.removeChild(p.screenTileEl);
+      }
+      p.screenTileEl = null;
+      p.screenVideoEl = null;
+      p.screenStreamId = null;
+    }
+  }
+
   function replaceVideoTrackForAll(track) {
     Object.keys(peers).forEach(function (uid) {
       var pc = peers[uid].pc;
@@ -398,6 +469,36 @@
           sender.replaceTrack(track).catch(function () {});
         }
       });
+    });
+  }
+
+  function renegotiateWithPeer(remoteUserId, remoteUserName) {
+    var p = peers[remoteUserId];
+    if (!p || !p.pc) return;
+    var pc = p.pc;
+    pc.createOffer().then(function (offer) {
+      return pc.setLocalDescription(offer);
+    }).then(function () {
+      var d = pc.localDescription;
+      sendSignal(remoteUserId, 'offer', { type: d.type, sdp: d.sdp, userName: myName });
+    }).catch(function (err) { console.error(err); });
+  }
+
+  function addScreenTrackForAll(track) {
+    Object.keys(peers).forEach(function (uid) {
+      var p = peers[uid];
+      var pc = p && p.pc;
+      if (!pc) return;
+      if (p.screenSender) {
+        p.screenSender.replaceTrack(track).catch(function () {});
+      } else {
+        try {
+          p.screenSender = pc.addTrack(track, screenStream);
+        } catch (_) {
+          return;
+        }
+      }
+      renegotiateWithPeer(uid, p.name || 'Peer');
     });
   }
 
@@ -431,8 +532,8 @@
           screenVideoEl.srcObject = stream;
         }
 
-        // For remote peers, replace the sent video track with the screen
-        replaceVideoTrackForAll(track);
+        // For remote peers, send an additional video track for the screen
+        addScreenTrackForAll(track);
 
         isScreenSharing = true;
         var btn = byId('btnScreen');
@@ -454,10 +555,17 @@
 
   function stopScreenShare() {
     if (!isScreenSharing) return;
-    var camTrack = cameraStream && cameraStream.getVideoTracks()[0];
-    if (camTrack) {
-      replaceVideoTrackForAll(camTrack);
-    }
+    // Remove screen tracks from all peer connections and renegotiate
+    Object.keys(peers).forEach(function (uid) {
+      var p = peers[uid];
+      var pc = p && p.pc;
+      if (!pc || !p.screenSender) return;
+      try {
+        pc.removeTrack(p.screenSender);
+      } catch (_) {}
+      p.screenSender = null;
+      renegotiateWithPeer(uid, p.name || 'Peer');
+    });
     if (screenStream) {
       screenStream.getTracks().forEach(function (t) { t.stop(); });
       screenStream = null;
