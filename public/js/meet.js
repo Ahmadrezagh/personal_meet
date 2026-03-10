@@ -8,6 +8,8 @@
   var screenStream = null;
   var isScreenSharing = false;
   var currentFacingMode = 'user'; // 'user' or 'environment'
+  var isReconnecting = false;
+  var reconnectTimer = null;
   var peers = {}; // peerUserId -> { pc, name, tileEl, videoEl }
   var eventSource = null;
   var iceServers = [{ urls: 'stun:stun.l.google.com:19302' }]; // default; replaced by /api/ice-servers
@@ -190,8 +192,9 @@
       } catch (e) {}
     };
     eventSource.onerror = function () {
-      eventSource.close();
-      setTimeout(startEventSource, 2000);
+      try { eventSource.close(); } catch (_) {}
+      eventSource = null;
+      scheduleReconnect();
     };
   }
 
@@ -204,7 +207,7 @@
       .catch(function () {});
   }
 
-  function joinMeeting() {
+  function joinMeeting(isReconnect) {
     fetch(API + '/api/join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -222,7 +225,9 @@
         connectToPeer(p.userId, p.userName);
       });
     }).catch(function () {
-      alert('Could not join meeting. Is the server running?');
+      if (!isReconnect) {
+        alert('Could not join meeting. Is the server running?');
+      }
     });
   }
 
@@ -461,6 +466,33 @@
     isScreenSharing = false;
     var btn = byId('btnScreen');
     if (btn) btn.classList.remove('screen-on');
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer || isReconnecting) return;
+    reconnectTimer = setTimeout(function () {
+      reconnectTimer = null;
+      reconnectToMeeting();
+    }, 2000);
+  }
+
+  function reconnectToMeeting() {
+    if (isReconnecting) return;
+    isReconnecting = true;
+
+    // Clean up existing remote peers
+    Object.keys(peers).forEach(function (id) {
+      removeRemoteTile(id);
+    });
+
+    // EventSource will be recreated by joinMeeting -> startEventSource
+    if (eventSource) {
+      try { eventSource.close(); } catch (_) {}
+      eventSource = null;
+    }
+
+    joinMeeting(true);
+    isReconnecting = false;
   }
 
   function leaveMeeting() {
@@ -808,7 +840,15 @@
       });
     });
 
-    startLocalStream().then(joinMeeting);
+    if (typeof window !== 'undefined' && 'addEventListener' in window) {
+      window.addEventListener('online', function () {
+        scheduleReconnect();
+      });
+    }
+
+    startLocalStream().then(function () {
+      return joinMeeting(false);
+    });
   }
 
   init();
