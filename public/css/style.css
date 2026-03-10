@@ -373,6 +373,122 @@ body.meet {
   background: var(--border);
 }
 
+/* ----- Whiteboard ----- */
+.meet-whiteboard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 120;
+  display: none;
+}
+
+.meet-whiteboard-overlay.open {
+  display: block;
+}
+
+.whiteboard-layout.inline {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.whiteboard-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.whiteboard-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9375rem;
+}
+
+.whiteboard-app-name {
+  font-weight: 500;
+}
+
+.whiteboard-divider {
+  color: var(--text-muted);
+}
+
+.whiteboard-code {
+  font-family: ui-monospace, monospace;
+  color: var(--text-muted);
+}
+
+.whiteboard-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.whiteboard-toolbar {
+  width: 220px;
+  max-width: 260px;
+  padding: 12px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.whiteboard-tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.whiteboard-tool-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.whiteboard-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.whiteboard-color {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background-clip: padding-box;
+}
+
+.whiteboard-color.selected {
+  border-color: var(--primary);
+}
+
+.whiteboard-btn-clear {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.whiteboard-canvas-wrap {
+  flex: 1;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+#whiteboardCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
 .meet-controls {
   flex-shrink: 0;
   display: flex;

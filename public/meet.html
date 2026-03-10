@@ -37,6 +37,49 @@
       </div>
       <!-- Remote tiles injected by meet.js -->
     </div>
+    <div class="meet-whiteboard-overlay" id="whiteboardOverlay" aria-hidden="true">
+      <div class="whiteboard-layout inline">
+        <header class="whiteboard-header">
+          <div class="whiteboard-title">
+            <span class="whiteboard-app-name">Whiteboard</span>
+            <span class="whiteboard-divider">•</span>
+            <span id="whiteboardMeetingCode" class="whiteboard-code"></span>
+          </div>
+          <div class="whiteboard-actions">
+            <button type="button" class="btn-icon" id="btnWhiteboardClose" title="Close whiteboard" aria-label="Close whiteboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </header>
+        <main class="whiteboard-main">
+          <aside class="whiteboard-toolbar">
+            <div class="whiteboard-tool-group">
+              <div class="whiteboard-tool-label">Pen</div>
+              <div class="whiteboard-colors" id="whiteboardColors">
+                <button type="button" class="whiteboard-color selected" data-color="#ffffff" style="background:#ffffff;"></button>
+                <button type="button" class="whiteboard-color" data-color="#f28b82" style="background:#f28b82;"></button>
+                <button type="button" class="whiteboard-color" data-color="#fbbc04" style="background:#fbbc04;"></button>
+                <button type="button" class="whiteboard-color" data-color="#34a853" style="background:#34a853;"></button>
+                <button type="button" class="whiteboard-color" data-color="#8ab4f8" style="background:#8ab4f8;"></button>
+              </div>
+            </div>
+            <div class="whiteboard-tool-group">
+              <button type="button" class="btn whiteboard-btn-clear" id="btnWhiteboardClear">Clear for everyone</button>
+            </div>
+            <div class="whiteboard-tool-group">
+              <div class="whiteboard-tool-label">Size</div>
+              <input type="range" id="whiteboardSize" min="2" max="12" value="4">
+            </div>
+          </aside>
+          <section class="whiteboard-canvas-wrap">
+            <canvas id="whiteboardCanvas"></canvas>
+          </section>
+        </main>
+      </div>
+    </div>
     <footer class="meet-controls">
       <button type="button" class="ctrl-btn" id="btnMic" title="Microphone">
         <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 013 3v8a3 3 0 01-6 0V4a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -53,6 +96,13 @@
           <line x1="12" y1="17" x2="12" y2="20"></line>
         </svg>
         <span>Screen</span>
+      </button>
+      <button type="button" class="ctrl-btn" id="btnWhiteboard" title="Open whiteboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 20h16" />
+          <path d="M6 16l9.5-9.5a1.5 1.5 0 012.12 0l0.88 0.88a1.5 1.5 0 010 2.12L9 19H6z" />
+        </svg>
+        <span>Whiteboard</span>
       </button>
       <button type="button" class="ctrl-btn" id="btnChat" title="Chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>

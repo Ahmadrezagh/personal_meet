@@ -183,6 +183,8 @@
           handleIce(from, payload);
         } else if (type === 'chat' && payload) {
           appendChatMessage(payload.userName || 'Someone', payload.text, false);
+        } else if (type === 'whiteboard' && payload) {
+          handleRemoteWhiteboard(payload);
         }
       } catch (e) {}
     };
@@ -359,6 +361,189 @@
     });
   }
 
+  // ----- Whiteboard (inline overlay) -----
+  var whiteboardVisible = false;
+  var wbCanvas = null;
+  var wbCtx = null;
+  var wbIsDrawing = false;
+  var wbLastX = 0;
+  var wbLastY = 0;
+  var wbColor = '#ffffff';
+  var wbSize = 4;
+
+  function broadcastWhiteboard(payload) {
+    Object.keys(peers).forEach(function (peerId) {
+      sendSignal(peerId, 'whiteboard', payload);
+    });
+  }
+
+  function wbClearLocal() {
+    if (!wbCtx || !wbCanvas) return;
+    wbCtx.fillStyle = '#202124';
+    wbCtx.fillRect(0, 0, wbCanvas.width, wbCanvas.height);
+  }
+
+  function wbResizeCanvas() {
+    if (!wbCanvas) return;
+    var rect = wbCanvas.getBoundingClientRect();
+    var oldW = wbCanvas.width;
+    var oldH = wbCanvas.height;
+    var oldImage = null;
+    if (oldW && oldH && wbCtx) {
+      try {
+        oldImage = wbCtx.getImageData(0, 0, oldW, oldH);
+      } catch (_) {
+        oldImage = null;
+      }
+    }
+    wbCanvas.width = rect.width;
+    wbCanvas.height = rect.height;
+    if (oldImage) {
+      wbCtx.putImageData(oldImage, 0, 0);
+    } else {
+      wbClearLocal();
+    }
+  }
+
+  function wbDrawSegment(x0, y0, x1, y1, color, size) {
+    if (!wbCtx) return;
+    wbCtx.strokeStyle = color;
+    wbCtx.lineWidth = size;
+    wbCtx.lineCap = 'round';
+    wbCtx.lineJoin = 'round';
+    wbCtx.beginPath();
+    wbCtx.moveTo(x0, y0);
+    wbCtx.lineTo(x1, y1);
+    wbCtx.stroke();
+  }
+
+  function wbPointerDown(e) {
+    if (!wbCanvas) return;
+    wbIsDrawing = true;
+    var rect = wbCanvas.getBoundingClientRect();
+    wbLastX = e.clientX - rect.left;
+    wbLastY = e.clientY - rect.top;
+  }
+
+  function wbPointerMove(e) {
+    if (!wbIsDrawing || !wbCanvas) return;
+    var rect = wbCanvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+    wbDrawSegment(wbLastX, wbLastY, x, y, wbColor, wbSize);
+    var w = wbCanvas.width || 1;
+    var h = wbCanvas.height || 1;
+    broadcastWhiteboard({
+      kind: 'draw',
+      x0: wbLastX / w,
+      y0: wbLastY / h,
+      x1: x / w,
+      y1: y / h,
+      color: wbColor,
+      size: wbSize
+    });
+    wbLastX = x;
+    wbLastY = y;
+  }
+
+  function wbPointerUp() {
+    wbIsDrawing = false;
+  }
+
+  function handleRemoteWhiteboard(payload) {
+    if (!payload || !wbCanvas) return;
+    if (payload.kind === 'clear') {
+      wbClearLocal();
+      return;
+    }
+    if (payload.kind === 'draw') {
+      var w = wbCanvas.width || 1;
+      var h = wbCanvas.height || 1;
+      var x0 = payload.x0 * w;
+      var y0 = payload.y0 * h;
+      var x1 = payload.x1 * w;
+      var y1 = payload.y1 * h;
+      wbDrawSegment(x0, y0, x1, y1, payload.color || '#ffffff', payload.size || 4);
+    }
+  }
+
+  function initWhiteboard() {
+    var overlay = byId('whiteboardOverlay');
+    if (!overlay) return;
+    wbCanvas = byId('whiteboardCanvas');
+    if (!wbCanvas) return;
+    wbCtx = wbCanvas.getContext('2d');
+    wbResizeCanvas();
+    wbClearLocal();
+
+    wbCanvas.addEventListener('pointerdown', function (e) {
+      wbCanvas.setPointerCapture(e.pointerId);
+      wbPointerDown(e);
+    });
+    wbCanvas.addEventListener('pointermove', wbPointerMove);
+    wbCanvas.addEventListener('pointerup', function (e) {
+      wbCanvas.releasePointerCapture(e.pointerId);
+      wbPointerUp();
+    });
+    wbCanvas.addEventListener('pointercancel', wbPointerUp);
+
+    window.addEventListener('resize', wbResizeCanvas);
+
+    var colors = byId('whiteboardColors');
+    if (colors) {
+      colors.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('.whiteboard-color');
+        if (!btn) return;
+        var color = btn.getAttribute('data-color');
+        if (!color) return;
+        wbColor = color;
+        [].slice.call(colors.querySelectorAll('.whiteboard-color')).forEach(function (el) {
+          el.classList.toggle('selected', el === btn);
+        });
+      });
+    }
+
+    var sizeInput = byId('whiteboardSize');
+    if (sizeInput) {
+      sizeInput.addEventListener('input', function () {
+        var v = parseInt(sizeInput.value, 10);
+        if (!isNaN(v)) wbSize = v;
+      });
+    }
+
+    var btnClear = byId('btnWhiteboardClear');
+    if (btnClear) {
+      btnClear.addEventListener('click', function () {
+        wbClearLocal();
+        broadcastWhiteboard({ kind: 'clear' });
+      });
+    }
+
+    var codeEl = byId('whiteboardMeetingCode');
+    if (codeEl) {
+      codeEl.textContent = meetingId + ' – Whiteboard';
+    }
+  }
+
+  function openWhiteboard() {
+    var overlay = byId('whiteboardOverlay');
+    if (!overlay) return;
+    // Show overlay first so canvas has real dimensions
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+    if (!wbCanvas || !wbCtx) initWhiteboard();
+    wbResizeCanvas();
+    whiteboardVisible = true;
+  }
+
+  function closeWhiteboard() {
+    var overlay = byId('whiteboardOverlay');
+    if (!overlay) return;
+    whiteboardVisible = false;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
   function openChat() {
     var panel = byId('chatPanel');
     var backdrop = byId('chatBackdrop');
@@ -431,6 +616,15 @@
     }
     byId('btnLeave').addEventListener('click', leaveMeeting);
     byId('btnCopyCode').addEventListener('click', copyCode);
+
+    var btnWhiteboard = byId('btnWhiteboard');
+    if (btnWhiteboard) {
+      btnWhiteboard.addEventListener('click', openWhiteboard);
+    }
+    var btnWhiteboardClose = byId('btnWhiteboardClose');
+    if (btnWhiteboardClose) {
+      btnWhiteboardClose.addEventListener('click', closeWhiteboard);
+    }
 
     var btnChat = byId('btnChat');
     if (btnChat) btnChat.addEventListener('click', toggleChat);
