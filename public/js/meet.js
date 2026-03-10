@@ -273,6 +273,51 @@
     }
   }
 
+  // ----- Local screen tile helpers -----
+
+  function ensureLocalScreenTile() {
+    var existing = byId('localScreenTile');
+    if (existing) return existing;
+
+    var container = byId('videosContainer');
+    if (!container) return null;
+
+    var tile = document.createElement('div');
+    tile.className = 'video-tile local screen-share';
+    tile.id = 'localScreenTile';
+
+    var video = document.createElement('video');
+    video.id = 'localScreenVideo';
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    var label = document.createElement('div');
+    label.className = 'tile-label';
+    label.innerHTML = '<span>Your screen</span>';
+
+    var fsBtn = document.createElement('button');
+    fsBtn.type = 'button';
+    fsBtn.className = 'tile-btn-fullscreen';
+    fsBtn.title = 'Full screen';
+    fsBtn.setAttribute('aria-label', 'Full screen');
+    fsBtn.innerHTML = '<svg class="icon-expand" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h6v2H5v4H3V3zm12 0h4v4h-2V5h-2V3zM3 21h6v-2H5v-5H3v7zm12-2v2h4v-4h-2v2h-2z"/></svg><svg class="icon-exit" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M5 5h4v2H7v4H5V5zm10 0h4v4h-2V7h-2V5zM5 19v-4h2v2h4v2H5zm14-4v4h-4v-2h2v-2h2z"/></svg>';
+
+    tile.appendChild(video);
+    tile.appendChild(label);
+    tile.appendChild(fsBtn);
+    container.appendChild(tile);
+
+    return tile;
+  }
+
+  function removeLocalScreenTile() {
+    var tile = byId('localScreenTile');
+    if (tile && tile.parentNode) {
+      tile.parentNode.removeChild(tile);
+    }
+  }
+
   function replaceVideoTrackForAll(track) {
     Object.keys(peers).forEach(function (uid) {
       var pc = peers[uid].pc;
@@ -307,9 +352,17 @@
           alert('No video track in screen share.');
           return;
         }
+
+        // Keep camera video and add screen as a new tile locally
+        var localTile = ensureLocalScreenTile();
+        var screenVideoEl = byId('localScreenVideo');
+        if (localTile && screenVideoEl) {
+          screenVideoEl.srcObject = stream;
+        }
+
+        // For remote peers, replace the sent video track with the screen
         replaceVideoTrackForAll(track);
-        var videoEl = byId('localVideo');
-        if (videoEl) videoEl.srcObject = stream;
+
         isScreenSharing = true;
         var btn = byId('btnScreen');
         if (btn) btn.classList.add('screen-on');
@@ -333,13 +386,12 @@
     var camTrack = cameraStream && cameraStream.getVideoTracks()[0];
     if (camTrack) {
       replaceVideoTrackForAll(camTrack);
-      var videoEl = byId('localVideo');
-      if (videoEl) videoEl.srcObject = cameraStream;
     }
     if (screenStream) {
       screenStream.getTracks().forEach(function (t) { t.stop(); });
       screenStream = null;
     }
+    removeLocalScreenTile();
     isScreenSharing = false;
     var btn = byId('btnScreen');
     if (btn) btn.classList.remove('screen-on');
