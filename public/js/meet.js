@@ -7,6 +7,7 @@
   var cameraStream = null;
   var screenStream = null;
   var isScreenSharing = false;
+  var currentFacingMode = 'user'; // 'user' or 'environment'
   var peers = {}; // peerUserId -> { pc, name, tileEl, videoEl }
   var eventSource = null;
   var iceServers = [{ urls: 'stun:stun.l.google.com:19302' }]; // default; replaced by /api/ice-servers
@@ -273,6 +274,71 @@
     }
   }
 
+  function swapCamera() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      alert('Camera switching is not supported in this browser.');
+      return;
+    }
+
+    var useEnv = currentFacingMode === 'user';
+    var constraints = {
+      video: {
+        facingMode: useEnv ? { exact: 'environment' } : 'user'
+      }
+    };
+
+    navigator.mediaDevices.getUserMedia(constraints).then(function (newVideoStream) {
+      var newVideoTrack = newVideoStream.getVideoTracks()[0];
+      if (!newVideoTrack) {
+        newVideoStream.getTracks().forEach(function (t) { t.stop(); });
+        alert('Could not get a video track for the other camera.');
+        return;
+      }
+
+      // Build a new local stream preserving existing audio tracks
+      var newLocalStream = new MediaStream();
+      if (localStream) {
+        localStream.getAudioTracks().forEach(function (t) {
+          newLocalStream.addTrack(t);
+        });
+        // Stop old video tracks
+        localStream.getVideoTracks().forEach(function (t) {
+          t.stop();
+        });
+      }
+      newLocalStream.addTrack(newVideoTrack);
+
+      localStream = newLocalStream;
+      cameraStream = newLocalStream;
+
+      var videoEl = byId('localVideo');
+      if (videoEl) {
+        videoEl.srcObject = newLocalStream;
+      }
+
+      // Update all peer connections to use the new video track
+      replaceVideoTrackForAll(newVideoTrack);
+
+      // Keep cam on/off visual state consistent
+      var camBtn = byId('btnCam');
+      var camEnabled = true;
+      if (camBtn && camBtn.classList.contains('cam-off')) {
+        camEnabled = false;
+      }
+      setCam(camEnabled);
+
+      // Clean up the temporary stream container (its track has been moved)
+      newVideoStream.getTracks().forEach(function (t) {
+        if (t !== newVideoTrack) t.stop();
+      });
+
+      currentFacingMode = useEnv ? 'environment' : 'user';
+    }).catch(function (err) {
+      var msg = (err && (err.message || err.name)) || 'unknown error';
+      alert('Could not switch camera: ' + msg);
+    });
+  }
+
   // ----- Local screen tile helpers -----
 
   function ensureLocalScreenTile() {
@@ -422,6 +488,7 @@
   var wbLastY = 0;
   var wbColor = '#ffffff';
   var wbSize = 4;
+  var wbIsEraser = false;
 
   function broadcastWhiteboard(payload) {
     Object.keys(peers).forEach(function (peerId) {
@@ -482,7 +549,9 @@
     var rect = wbCanvas.getBoundingClientRect();
     var x = e.clientX - rect.left;
     var y = e.clientY - rect.top;
-    wbDrawSegment(wbLastX, wbLastY, x, y, wbColor, wbSize);
+    var drawColor = wbIsEraser ? '#202124' : wbColor;
+    var drawSize = wbSize;
+    wbDrawSegment(wbLastX, wbLastY, x, y, drawColor, drawSize);
     var w = wbCanvas.width || 1;
     var h = wbCanvas.height || 1;
     broadcastWhiteboard({
@@ -491,8 +560,8 @@
       y0: wbLastY / h,
       x1: x / w,
       y1: y / h,
-      color: wbColor,
-      size: wbSize
+      color: drawColor,
+      size: drawSize
     });
     wbLastX = x;
     wbLastY = y;
@@ -541,6 +610,7 @@
 
     window.addEventListener('resize', wbResizeCanvas);
 
+    var eraserBtn = byId('btnWhiteboardEraser');
     var colors = byId('whiteboardColors');
     if (colors) {
       colors.addEventListener('click', function (e) {
@@ -549,9 +619,18 @@
         var color = btn.getAttribute('data-color');
         if (!color) return;
         wbColor = color;
+        wbIsEraser = false;
+        if (eraserBtn) eraserBtn.classList.remove('active');
         [].slice.call(colors.querySelectorAll('.whiteboard-color')).forEach(function (el) {
           el.classList.toggle('selected', el === btn);
         });
+      });
+    }
+
+    if (eraserBtn) {
+      eraserBtn.addEventListener('click', function () {
+        wbIsEraser = !wbIsEraser;
+        eraserBtn.classList.toggle('active', wbIsEraser);
       });
     }
 
@@ -659,6 +738,10 @@
       var off = this.classList.toggle('cam-off');
       setCam(!off);
     });
+    var btnSwapCamera = byId('btnSwapCamera');
+    if (btnSwapCamera) {
+      btnSwapCamera.addEventListener('click', swapCamera);
+    }
     var btnScreen = byId('btnScreen');
     if (btnScreen) {
       btnScreen.addEventListener('click', function () {
