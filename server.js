@@ -11,7 +11,7 @@ const PORT = 3000;
 const PUBLIC = path.join(__dirname, 'public');
 const TURN_CONFIG_PATH = path.join(__dirname, 'turn-config.json');
 
-// meetingId -> Map of userId -> { name, queue: [] }
+// meetingId -> Map of userId -> { name, queue: [], disconnectTimer, disconnectedAt }
 const meetings = new Map();
 
 // Parse JSON body from request
@@ -59,7 +59,18 @@ async function apiJoin(req, res) {
   const meeting = getMeeting(meetingId);
   const peers = [];
   meeting.forEach((data, id) => { peers.push({ userId: id, userName: data.name }); });
-  meeting.set(userId, { name: userName, queue: [] });
+  const existing = meeting.get(userId);
+  if (existing && existing.disconnectTimer) {
+    clearTimeout(existing.disconnectTimer);
+    existing.disconnectTimer = null;
+    existing.disconnectedAt = null;
+  }
+  meeting.set(userId, {
+    name: userName,
+    queue: (existing && Array.isArray(existing.queue)) ? existing.queue : [],
+    disconnectTimer: null,
+    disconnectedAt: null
+  });
   sendJson(res, 200, { peers });
 }
 
@@ -71,6 +82,22 @@ async function apiSignal(req, res) {
   const meeting = getMeeting(meetingId);
   const peer = meeting.get(to);
   if (!peer) return sendJson(res, 404, { error: 'peer not found' });
+  // Prevent unbounded memory growth (e.g., whiteboard floods)
+  const MAX_QUEUE = 500;
+  if (!Array.isArray(peer.queue)) peer.queue = [];
+  if (peer.queue.length >= MAX_QUEUE) {
+    // Prefer dropping older whiteboard events first (they're high-frequency + ephemeral)
+    let dropped = 0;
+    for (let i = 0; i < peer.queue.length && peer.queue.length >= MAX_QUEUE; i++) {
+      if (peer.queue[i] && peer.queue[i].type === 'whiteboard') {
+        peer.queue.splice(i, 1);
+        i--;
+        dropped++;
+      }
+      if (dropped > 50) break;
+    }
+    while (peer.queue.length >= MAX_QUEUE) peer.queue.shift();
+  }
   peer.queue.push({ from, type, payload });
   sendJson(res, 200, { ok: true });
 }
@@ -93,9 +120,24 @@ function apiEvents(req, res, meetingId, userId) {
   const interval = setInterval(() => {
     while (peer.queue.length) sendEvent(peer.queue.shift());
   }, 200);
+  // Keep-alive comment for proxies/timeouts
+  const keepAlive = setInterval(() => {
+    try { res.write(': keep-alive\n\n'); } catch (_) {}
+  }, 15000);
   req.on('close', () => {
     clearInterval(interval);
-    meeting.delete(userId);
+    clearInterval(keepAlive);
+    // Give the client time to reconnect without being treated as "left"
+    // (SSE can drop during CPU spikes / network changes like screen-share start)
+    peer.disconnectedAt = Date.now();
+    if (peer.disconnectTimer) clearTimeout(peer.disconnectTimer);
+    peer.disconnectTimer = setTimeout(() => {
+      // Only delete if it hasn't rejoined/reconnected
+      const current = meeting.get(userId);
+      if (current && current.disconnectedAt && Date.now() - current.disconnectedAt >= 15000) {
+        meeting.delete(userId);
+      }
+    }, 15000);
   });
 }
 

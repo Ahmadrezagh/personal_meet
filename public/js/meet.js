@@ -133,9 +133,36 @@
       };
     };
     pc.onconnectionstatechange = function () {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
+      // 'disconnected' can be transient (wifi change, screen-share renegotiation, brief stalls).
+      // Only remove immediately on 'failed'/'closed'. For 'disconnected', give it a moment.
+      var p = peers[remoteUserId] = peers[remoteUserId] || {};
+      if (pc.connectionState === 'failed') {
         removeRemoteTile(remoteUserId);
+        return;
       }
+      if (pc.connectionState === 'closed') {
+        removeRemoteTile(remoteUserId);
+        return;
+      }
+      if (pc.connectionState === 'disconnected') {
+        if (p.disconnectTimer) clearTimeout(p.disconnectTimer);
+        p.disconnectTimer = setTimeout(function () {
+          try {
+            if (pc.connectionState === 'disconnected') removeRemoteTile(remoteUserId);
+          } catch (_) {}
+        }, 5000);
+      } else if (p.disconnectTimer) {
+        clearTimeout(p.disconnectTimer);
+        p.disconnectTimer = null;
+      }
+    };
+    pc.oniceconnectionstatechange = function () {
+      // Attempt recovery before giving up; browsers will sometimes need an ICE restart.
+      try {
+        if (pc.iceConnectionState === 'failed' && typeof pc.restartIce === 'function') {
+          pc.restartIce();
+        }
+      } catch (_) {}
     };
     peers[remoteUserId] = peers[remoteUserId] || {};
     peers[remoteUserId].pc = pc;
@@ -682,6 +709,24 @@
     });
   }
 
+  // Whiteboard sends can be extremely high frequency; throttle to reduce server load and SSE disconnects.
+  var wbSendScheduled = false;
+  var wbPendingPayload = null;
+  var wbLastSendAt = 0;
+
+  function scheduleWhiteboardSend(payload) {
+    wbPendingPayload = payload;
+    if (wbSendScheduled) return;
+    wbSendScheduled = true;
+    setTimeout(function () {
+      wbSendScheduled = false;
+      if (!wbPendingPayload) return;
+      wbLastSendAt = Date.now();
+      broadcastWhiteboard(wbPendingPayload);
+      wbPendingPayload = null;
+    }, Math.max(0, 33 - (Date.now() - wbLastSendAt))); // ~30fps
+  }
+
   function wbClearLocal() {
     if (!wbCtx || !wbCanvas) return;
     wbCtx.fillStyle = '#202124';
@@ -740,7 +785,7 @@
     wbDrawSegment(wbLastX, wbLastY, x, y, drawColor, drawSize);
     var w = wbCanvas.width || 1;
     var h = wbCanvas.height || 1;
-    broadcastWhiteboard({
+    scheduleWhiteboardSend({
       kind: 'draw',
       x0: wbLastX / w,
       y0: wbLastY / h,
@@ -832,6 +877,7 @@
     if (btnClear) {
       btnClear.addEventListener('click', function () {
         wbClearLocal();
+        // Clear is important; send immediately
         broadcastWhiteboard({ kind: 'clear' });
       });
     }
